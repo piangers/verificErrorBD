@@ -197,6 +197,3 @@ class StartData:
         else:
             self.iface.messageBar().pushMessage("Erro", u"a geração de flags falhou!", level=QgsMessageBar.CRITICAL, duration=10)
             print query.lastError().text()
-
-
-
