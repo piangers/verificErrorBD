@@ -17,10 +17,7 @@ class StartData:
         self.geometryColumn = 'geom'
         self.keyColumn = 'id'
 
-    def initGui(self):
-        
-        
-         
+    def initGui(self): 
         # cria uma ação que iniciará a configuração do plugin 
         pai = self.iface.mainWindow()
         icon_path = ':/plugins/StartData/icon.png'
@@ -44,9 +41,12 @@ class StartData:
     ##################################
 
         layer = self.iface.activeLayer() 
+
+        if not layer:
+            self.iface.messageBar().pushMessage("Erro", u"Esperando uma Active Layer!", level=QgsMessageBar.CRITICAL, duration=5)
+            return
         if layer.featureCount() == 0:
-            self.iface.messageBar().pushMessage("Erro", u"a camada não possui feições!", level=QgsMessageBar.CRITICAL, duration=10)
-            print u'Camada não possui feições!'
+            self.iface.messageBar().pushMessage("Erro", u"a camada não possui feições!", level=QgsMessageBar.CRITICAL, duration=5)
             return
 
         parametros = layer.source().split(" ") # recebe todos os parametros em uma lista ( senha, porta, password etc..)
@@ -86,7 +86,7 @@ class StartData:
 
         # Testa se os parametros receberam os valores pretendidos, caso não, apresenta a mensagem informando..
         if len(dbname) == 0 or len(host) == 0 or port == 0 or len(user) == 0 or len(password) == 0:
-            self.iface.messageBar().pushMessage("Erro", u'Um dos parametros não foram devidamente recebidos!', level=QgsMessageBar.CRITICAL, duration=10)
+            self.iface.messageBar().pushMessage("Erro", u'Um dos parametros não foram devidamente recebidos!', level=QgsMessageBar.CRITICAL, duration=5)
             return
 
     ####################################
@@ -111,7 +111,7 @@ class StartData:
     ###### CRIAÇÃO DE MEMORY LAYER #####
     ####################################
         
- 
+
         layerCrs = layer.crs().authid() # Passa o formato (epsg: numeros)
 
         flagsLayerName = layer.name() + "_flags"
@@ -159,7 +159,8 @@ class StartData:
         if layerExistsInDB == False:
             self.iface.messageBar().pushMessage("Erro", u"Provedor da camada corrente não provem do banco de dados!", level=QgsMessageBar.CRITICAL, duration=10)
             return
-
+        
+        # Busca através do SQL 
         query_string  = '''select distinct (reason(ST_IsValidDetail(f."{2}",0))) AS motivo, '''
         query_string += '''ST_AsText(ST_Multi(ST_SetSrid(location(ST_IsValidDetail(f."{2}",0)), ST_Srid(f.{2})))) as local from '''
         query_string += '''(select "{3}", "{2}" from only "{0}"."{1}"  where ST_IsValid("{2}") = 'f' and {3} in ({4})) as f''' 
@@ -180,8 +181,8 @@ class StartData:
             flagGeom = QgsGeometry.fromWkt(local) # passa o local onde foi localizado o erro.
             flagFeat.setGeometry(flagGeom)
             flagFeat.initAttributes(2)
-            flagFeat.setAttribute(0,flagId)
-            flagFeat.setAttribute(1, motivo)
+            flagFeat.setAttribute(0,flagId) # insere o id definido para a coluna 0 da layer de memória.
+            flagFeat.setAttribute(1, motivo) # insere o motivo/razão pré-definida para a coluna 1 da layer de memória.
 
             listaFeatures.append(flagFeat)    
 
